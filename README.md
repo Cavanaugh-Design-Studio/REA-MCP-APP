@@ -4,7 +4,7 @@ workspace and an optional OpenRouter analyst/reviewer team" width="200" />
 
 # REA MCP APP: Reverse Engineer Anything
 **AI Software Engineer: Anthony Cavanaugh**  
-Base on the original skill repository https://github.com/morluto/rea and extended with additional features and improvements.
+Based on the original skill repository https://github.com/morluto/rea and extended with additional features and improvements.
 
 ### One MCP App and CLI to uncover how software works—from native binaries and managed code to Electron apps, websites, and live runtime behavior.
 
