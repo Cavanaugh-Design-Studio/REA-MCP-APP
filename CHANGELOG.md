@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.4.0](https://github.com/Cavanaugh-Design-Studio/REA-MCP-APP/compare/rea-agents-6.3.0...rea-agents-6.4.0) (2026-10-15)
+
+
+### Documentation
+
+* add environment example ([4de8125](https://github.com/Cavanaugh-Design-Studio/REA-MCP-APP/commit/4de8125a23c672bf18dc8e6e2c6cb9a8e0662902))
+* explain MCP client and app setup ([4345cbe](https://github.com/Cavanaugh-Design-Studio/REA-MCP-APP/commit/4345cbe4f04d8d76abd7e089bff90a85aa0f538d))
+
 ## [6.3.0](https://github.com/morluto/rea/compare/rea-agents-6.2.0...rea-agents-6.3.0) (2026-10-09)
 
 
