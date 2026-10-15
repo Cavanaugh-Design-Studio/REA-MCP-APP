@@ -155,6 +155,38 @@ npx rea-agents@latest setup
 Review the setup changes and restart your agent. For one-off CLI commands,
 use `npx rea-agents@latest` followed by the command.
 
+### Connect from an MCP client manually
+
+For clients that use the `mcpServers` JSON format, add REA to the client's MCP
+configuration file (often named `mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "rea": {
+      "command": "npx",
+      "args": ["-y", "rea-agents@latest", "mcp"]
+    }
+  }
+}
+```
+
+Save the file and restart or reconnect the client. This starts REA as a local
+stdio MCP server. Client-specific config locations and other formats are in the
+[manual MCP registration guide](docs/installation.md#mcp-registry); guided setup
+with `npx rea-agents setup` can write the matching registration for supported
+clients.
+
+### Open the REA MCP App
+
+In a session connected to REA, ask your client to open the **REA workbench** or
+call `rea_workbench`. MCP Apps compatible clients render the interactive
+Evidence workspace; clients without MCP Apps support can still use REA's tools
+and receive their regular results. See the [MCP App guide](docs/mcp-app.md) for
+the workbench features and optional OpenRouter configuration. REA does not load
+`.env` files automatically, so configure any optional server variables in the
+MCP client's server environment and keep credentials in its secret store.
+
 ## How REA works
 
 Your agent calls REA through MCP to inspect the target and trace relevant code.
