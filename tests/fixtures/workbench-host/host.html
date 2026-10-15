@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>REA App bridge verification</title>
+    <style>
+      body {
+        margin: 0;
+        background: #141a2b;
+        color: #e1e7fa;
+        font: 14px system-ui;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 18px;
+        flex-wrap: wrap;
+      }
+      header strong {
+        color: #f4c268;
+      }
+      button {
+        padding: 6px 12px;
+      }
+      iframe {
+        display: block;
+        width: 100%;
+        height: calc(100vh - 80px);
+        border: 0;
+        margin: auto;
+      }
+      iframe.fullscreen {
+        position: fixed;
+        inset: 0;
+        width: 100vw !important;
+        height: 100dvh;
+        z-index: 10;
+      }
+      #host-status {
+        padding: 0 18px;
+        height: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>REA verification host · inspect App engine status</strong
+      ><button id="host-theme">Host light theme</button
+      ><button id="mobile">Mobile width</button
+      ><button id="reload">Reload App</button
+      ><button id="chat-start">Start from chat</button>
+      <label
+        >Fullscreen host
+        <select id="host-mode" aria-label="Fullscreen host">
+          <option value="supported">Supported</option>
+          <option value="omitted">Unavailable</option>
+          <option value="inline">Returns inline</option>
+          <option value="reject">Rejects request</option>
+          <option value="timeout">Times out</option>
+        </select></label
+      >
+      <label
+        >Browser links
+        <select id="link-mode" aria-label="Browser links">
+          <option value="success">Supported</option>
+          <option value="denied">Denied</option>
+          <option value="reject">Throws</option>
+          <option value="timeout">Times out</option>
+          <option value="unavailable">Unavailable</option>
+        </select></label
+      >
+    </header>
+    <div id="host-status">Connecting bridge</div>
+    <iframe
+      title="REA workbench"
+      sandbox="allow-scripts allow-same-origin allow-downloads"
+    ></iframe>
+    <script type="module" src="/host.ts"></script>
+  </body>
+</html>
