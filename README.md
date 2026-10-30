@@ -1,387 +1,136 @@
-<div align="center">
-<img src="docs/assets/rea-mcp-app-icon.png" alt="Launch the MCP Workbench that adds a color-coded Evidence
-workspace and an optional OpenRouter analyst/reviewer team" width="200" />
+﻿# REA MCP App
 
-# REA MCP APP: Reverse Engineer Anything
-**AI Software Engineer: Anthony Cavanaugh**  
-Based on the original skill repository https://github.com/morluto/rea and extended with additional features and improvements.
+An investigation workbench whose **internal agents do the analysis**. The client submits a question and target, follows progress, and receives Evidence-backed findings. Internal agents use [leanrea](leanrea/SKILL.md) to select and execute installed local tools.
 
-### One MCP App and CLI to uncover how software works—from native binaries and managed code to Electron apps, websites, and live runtime behavior.
+This app carries over the workbench and canonical Evidence/project semantics.
+Selected static parsers, graph builders and owned engine protocols now run
+internally. The original 180-tool catalog and registration remain excluded.
+There is no `rea-agents` runtime dependency or hidden MCP server.
 
-**See a feature you like. Understand how it works, down to the binary level.**
+Internal agents can now generate JS/Electron AST and relationship graphs,
+decode .NET metadata/CIL/native declarations without executing target code,
+project managed graphs, inspect native functions through caller-installed
+Ghidra, execute owned browser scenarios, and acquire selected-device PNG/XML,
+logs and properties through caller-installed adb. The workbench pages managed
+code and displays graph relationships with their evidence basis. See
+[implementation and acceptance](docs/capability-implementation.md).
 
-Trace a behavior through code, events, and execution. REA turns local analysis into linked Evidence your agent can inspect, question, and use in a durable workspace to build a reconstruction, compare real behavior, and verify declared cases. Optional AI specialists investigate assigned Evidence and report back to your main agent; cloud reasoning stays off until you enable it.
+The catalog has **4 model-facing tools and 11 App-only workspace operations**: 15 registered tools total. Hosts that ignore MCP Apps visibility may display all 15. Current measured definitions: 4,917 bytes for model-facing tools; 9,528 bytes for the complete catalog. Re-run acceptance after contract changes.
 
-[![npm version](https://img.shields.io/npm/v/rea-agents?style=flat-square&color=cb3837)](https://www.npmjs.com/package/rea-agents)
-[![CI](https://img.shields.io/github/actions/workflow/status/morluto/rea/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/morluto/rea/actions/workflows/ci.yml)
-[![MCP tool catalog](https://img.shields.io/badge/MCP-tool_catalog-5c4ee5?style=flat-square)](docs/mcp-contracts.md#generated-catalog)
-[![Node.js requirements](https://img.shields.io/badge/Node.js-requirements-339933?style=flat-square&logo=nodedotjs&logoColor=white)](#what-you-can-analyze)
-[![skills.sh](https://skills.sh/b/morluto/rea?style=flat-square)](https://skills.sh/morluto/rea/reverse-engineer-anything)
-[![MIT license](https://img.shields.io/badge/license-MIT-f4c430?style=flat-square)](LICENSE)
-[![Discord](https://img.shields.io/discord/1556595354999332884?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/GkcryMnJDM)
+| Client tool            | Purpose                                       |
+| ---------------------- | --------------------------------------------- |
+| `rea_workbench`        | Open the UI; inspect configuration and runs   |
+| `start_investigation`  | Assign work to internal execution agents      |
+| `read_investigation`   | Read progress, reports and paginated Evidence |
+| `cancel_investigation` | Cancel and drain owned commands               |
 
-[Quick start](#quick-start) · [How REA works](#how-rea-works) · [What you can analyze](#what-you-can-analyze) · [Showcases](#showcases) · [FAQ](#faq) · [Documentation](#documentation)
+App-only operations retain Evidence import/export, focused views, Unknowns, feature revisions, canonical comparisons and handoff export. Ordinary internal investigations use command execution, focused file reads, file writes and directory inspection. Feature assignments additionally receive scoped project editing/comparison operations.
 
-<code>npx rea-agents setup</code>
+## Setup
 
-<br />
+Replacing an earlier checkout or MCP registration? Read the
+[repository migration guide](docs/repository-migration.md) first. The old source
+remains in Git history; the launch commands and public catalog have changed.
 
-<img src="docs/assets/rea-mcp-workbench-app.png" alt="REA MCP App Workbench" width="1200" />
+Internal agents can also use `plan_reconstruction` to retain an Evidence-linked
+feature or application blueprint, then implement candidates with the existing
+workspace tools and test selected behavior against the original. A plan remains
+inferred; its creation does not pass a reconstruction or parity gate.
 
-<br /><br />
+Optional `search_web` uses Brave Search with server-side
+`BRAVE_SEARCH_API_KEY`. Enable **Allow public Brave searches** for an assignment
+in the workbench, or pass `allow_web_search: true` to `start_investigation`.
+Search is off by default, with a default allowance of three requests per run.
+See [research and reconstruction planning](docs/research-and-planning.md).
 
-<img src="docs/assets/rea-hopper-analysis.png" alt="REA launching its analysis bridge inside Hopper while inspecting a native binary" width="1200" />
+Use Node from `.nvmrc` and npm from `package.json#packageManager`:
 
-<br /><br />
-
-<table aria-label="REA community">
-<tr>
-<td align="center" width="360">
-  <a href="https://discord.gg/GkcryMnJDM">
-    <img src="docs/assets/discord.svg" height="42" alt="Discord" /><br />
-    <strong>Join the Reverse Engineering Community</strong>
-  </a><br />
-  <sub>Discord · Q&amp;A · Show and Tell</sub>
-</td>
-</tr>
-</table>
-
-<br />
-
-</div>
-
----
-
-See a feature in an app that you want in your own product? Ask your agent to investigate it with REA. It can inspect the app without its source code, explain how the feature works, show the evidence, and build a version for your project.
-
-REA connects your agent to tools for inspecting native binaries, JavaScript and Electron apps, .NET assemblies, and websites. You can also use the same tools from your terminal. Analysis runs locally, and results include the evidence and limitations behind each conclusion.
-
-The [MCP App investigation workbench](docs/mcp-app.md) adds a color-coded Evidence
-workspace and an optional OpenRouter analyst/reviewer team. Both model IDs are
-explicitly configurable with no defaults. Cloud reasoning is disabled until
-enabled on the server; selected Evidence is sent to OpenRouter only for delegated
-assignments. The main agent receives reports through REA's start/read/cancel tools.
-The [durable feature workspace](docs/feature-workspaces.md) connects selected
-behaviors, case timelines, executed comparisons, revisioned projects and portable
-handoffs. Finite verification and canonical readiness remain distinct results.
-
-The workbench includes light/dark themes and portable fullscreen. Scoped
-specialists report to the main agent under shared request, token and spending
-limits; specialist mode remains optional. Windows Electron captures now use a
-retained native Job Object to clean up the launched application and descendants,
-and retain ownership when cleanup cannot be verified.
-
-The [acceptance and comparative benchmark report](docs/feature-benchmark.md)
-records real browser, managed-artifact and Electron checks plus 30 live coding
-trials. On this finite task, REA Evidence improved observed completion, while
-specialist reports hit their output limit and added overhead. These results do
-not establish general sub-agent superiority. Installed Codex App acceptance was
-removed from the final scope at the user's request.
-
-Setup registers REA with your agent and installs matching workflow instructions. Native analysis can use an existing Hopper, Ghidra, or IDA installation; setup can optionally install Hopper with approval. Static JavaScript analysis needs no native analysis engine.
-
-> **[Visit the REA website](https://rea.tools/)** for setup instructions, illustrated guides, and real case studies.
-
-## Quick start
-
-### Set up your agent
-
-With Node.js and npm installed, run:
-
-```bash
-npx rea-agents setup
+```sh
+npm ci
+npm run build
+npm test
 ```
 
-Choose your agents, review the proposed changes, and approve them. Setup adds
-REA's MCP server and matching workflow instructions, with backups of existing
-configuration. Restart your agent afterward.
+Analysis utilities are bring-your-own: for example rg, Go, LLVM tools, Ghidra, JADX, Apktool, ILSpy or browser tooling. REA does not install or upgrade them or unrelated runtimes. Internal agents must adapt the guide's Unix recipes to the reported platform. The upstream leanrea benchmark was macOS-only.
 
-Setup supports Claude Code, Codex, Cursor, Gemini CLI, Grok Build and
-[other agents](docs/installation.md#supported-agents). See
-[installation and setup](docs/installation.md) for provider configuration and
-manual MCP registration.
+Configure server-side `REA_AI_ENABLED=true`, `OPENROUTER_API_KEY` and `REA_AI_ANALYST_MODEL`. There are no production model defaults. A reviewer is optional and runs only when requested. `.env.example` documents settings. Environment files are loaded only when explicitly selected by Node.
 
-### Ask your agent
+The package includes `leanrea/SKILL.md` and injects it into internal model
+requests automatically; installing a separate skill is unnecessary. The same
+unaltered bundled guide is available as the read-only MCP resource
+`rea://internal/skills/leanrea`, including upstream attribution and benchmark
+limits. Reading the resource does not execute its recipes or install utilities.
 
-```text
-Understand how search works in the Notes app, show me the evidence, and build a
-similar feature for my project.
-```
+Optional OpenTelemetry tracing and metrics are enabled server-side with
+`REA_OTEL_ENABLED=true` and an explicit `REA_OTEL_ENDPOINT` collector base URL
+(for example `http://127.0.0.1:4318`). REA installs no collector and adds no MCP
+tools. See [telemetry configuration and privacy](docs/observability.md).
 
-Replace Notes with your target app and the feature you want to understand.
+On Windows x64, command ownership uses the package-owned `native/windows/build` Job Object addon. The existing verified REA 6.3.0 component was staged there for local verification; build output is ignored by Git and included explicitly in package artifacts. Its manifest/hash/ABI checks and cleanup are retained. `REA_WINDOWS_NATIVE_DIR` can select a different matching directory. Native sources and the Linux/MinGW cross-build lane are included; that cross-build has not been rerun during this port. No secrets were copied.
 
-### Use the terminal
+## MCP registration
 
-Inspect an extracted JavaScript/Electron app directory or ASAR:
-
-```bash
-npx -y rea-agents@latest analyze-javascript-application /absolute/path/to/app --json
-```
-
-The result includes modules, imports, Electron boundaries and their evidence.
-Replace the path with your target, such as `"D:/apps/example"` on Windows.
-
-To install the `rea` command for regular use:
-
-```bash
-npm install --global rea-agents
-rea --help
-```
-
-For native analysis, configure a provider first. See the
-[CLI and Evidence guide](docs/cli.md) for native commands, provider selection,
-snapshots and scripting.
-
-### Update REA
-
-REA changes quickly, and new releases include frequent bug fixes. Keep your
-installation up to date.
-
-For an npm-installed CLI:
-
-```bash
-rea update
-```
-
-To refresh your agent registrations and skill, run the setup command printed
-by the update.
-
-If you use `npx`, update your agent setup with:
-
-```bash
-npx rea-agents@latest setup
-```
-
-Review the setup changes and restart your agent. For one-off CLI commands,
-use `npx rea-agents@latest` followed by the command.
-
-### Connect from an MCP client manually
-
-For clients that use the `mcpServers` JSON format, add REA to the client's MCP
-configuration file (often named `mcp.json`):
+Build first. Use the local launcher; **upstream `npx rea-agents` does not launch this app**:
 
 ```json
 {
   "mcpServers": {
-    "rea": {
-      "command": "npx",
-      "args": ["-y", "rea-agents@latest", "mcp"]
+    "rea-mcp-app": {
+      "command": "node",
+      "args": [
+        "--env-file=C:/analysis/rea-mcp-app.env",
+        "C:/analysis/REA-MCP-APP/scripts/launch.mjs"
+      ]
     }
   }
 }
 ```
 
-Save the file and restart or reconnect the client. This starts REA as a local
-stdio MCP server. Client-specific config locations and other formats are in the
-[manual MCP registration guide](docs/installation.md#mcp-registry); guided setup
-with `npx rea-agents setup` can write the matching registration for supported
-clients.
+Adjust paths. Keep credentials in host secret storage or the selected private file. Restart/reconnect after changes. MCP Apps hosts render `ui://rea/workbench.html`; other clients receive JSON reports. Fullscreen can continue the same connection through an authenticated loopback browser view. No public server or tunnel is required.
 
-### Open the REA MCP App
+Example assignment:
 
-In a session connected to REA, ask your client to open the **REA workbench** or
-call `rea_workbench`. MCP Apps compatible clients render the interactive
-Evidence workspace; clients without MCP Apps support can still use REA's tools
-and receive their regular results. See the [MCP App guide](docs/mcp-app.md) for
-the workbench features and optional OpenRouter configuration. REA does not load
-`.env` files automatically, so configure any optional server variables in the
-MCP client's server environment and keep credentials in its secret store.
-
-## How REA works
-
-Your agent calls REA through MCP to inspect the target and trace relevant code.
-REA returns findings with their evidence. The agent uses them to ask follow-up
-questions, explain the behavior, or write and test an implementation.
-CLI commands use the same workflows.
-
-![How REA works: scope a local target, inspect through the CLI, MCP or App, preserve durable Evidence, build and verify with your main agent, then export a runnable handoff. Optional AI specialists return scoped reports under shared budgets.](website/public/assets/figures/rea-investigation-flow.png)
-
-[Open the full-size figure](website/public/assets/figures/rea-investigation-flow.png).
-
-<a id="current-status"></a>
-
-## What you can analyze
-
-REA requires Node.js 22.x (>=22.19), 24.x (>=24.11), or 26+, plus npm.
-Additional tools and host support depend on the target:
-
-| Target                 | What REA returns                                                                     | Requirements and guide                                                                                                                |
-| ---------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Native binaries        | Pseudocode, assembly, strings, symbols, calls and references                         | Hopper, Ghidra or IDA; [native analysis](https://rea.tools/guides/native/)                                                            |
-| Offline ELF layout     | Sections, segments, original symbols/relocations and static mitigation candidates    | Caller-supplied pwntools on Linux x64; [binary diagnostics](docs/binary-diagnostics.md)                                               |
-| EVM bytecode           | Dispatch selectors, byte offsets, inferred arguments and mutability                  | Local raw/hex carrier on Linux x64; [offline EVM guide](docs/evm-bytecode.md)                                                         |
-| Recorded Linux crashes | Raw notes, every recorded thread's registers/signals and optional mapping candidates | Caller-supplied pwntools on Linux x64; optional GDB/pwndbg; [recorded crashes](docs/recorded-crashes.md)                              |
-| JavaScript / Electron  | Modules, imports, source maps, routes, IPC and native add-on relationships           | Node.js and npm; [application analysis](https://rea.tools/guides/javascript/)                                                         |
-| Websites               | Page structure, scripts, network observations and requested screenshots              | A Chrome-family browser; [browser analysis](https://rea.tools/guides/browser/)                                                        |
-| Saved network captures | Requests, responses, exposed payloads and source locations                           | HAR; mitmdump on Linux for native mitmproxy captures; [capture guide](docs/web-network-captures.md)                                   |
-| .NET assemblies        | Metadata, CIL instructions, declared native dependencies and build comparisons       | None (static only); [managed-code guide](docs/managed-code-analysis.md)                                                               |
-| Android APKs           | Manifest declarations, classes, decompiled methods and references                    | Headless JADX and a full JDK on Linux/macOS/Windows x64; [Android guide](docs/android-analysis.md)                                    |
-| Android devices        | Devices, packages, processes, logs, dumps, screen captures, and APK/file transfers   | Caller-supplied adb (emulator or hardware); [ADB guide](docs/adb-device-analysis.md)                                                  |
-| JEB projects           | Engine-backed project units, artifact digests and type/method pseudo-code            | A caller-started JEB client serving MCP, selected with REA_JEB_MCP_URL; [JEB guide](docs/jeb-analysis.md)                             |
-| Android resources      | Decoded manifest, string tables, locales and version facts                           | Caller-supplied Apktool launcher; [resource guide](docs/apktool-resource-analysis.md)                                                 |
-| Firmware               | Regions, extraction results and native-analysis handoffs                             | Binwalk / Unblob on Linux; [firmware guide](docs/firmware-analysis.md)                                                                |
-| Packages and resources | File inventories, digests, plists, Apple bundle anatomy and extracted resources      | [Artifact and JavaScript guide](docs/javascript-artifact-reconstruction.md), [Apple applications](docs/apple-application-analysis.md) |
-| Process behavior       | Terminal output, interactions, exit and filesystem observations, and run comparisons | Linux/macOS with a native PTY; [process capture](docs/process-capture.md)                                                             |
-
-Static JavaScript and .NET inspection read the supplied files without running
-the application. Runtime capture runs or interacts with the selected target
-using your user permissions; each runtime guide describes its effects.
-
-<a id="choosing-a-deep-analysis-provider"></a>
-
-Native formats and host support vary by provider. See
-[Hopper and Ghidra setup](docs/installation.md#hopper), the
-[IDA guide](docs/ida-provider.md), and
-[experimental Windows Ghidra support](docs/windows-ghidra-p0.md).
-Ghidra also supports [16-bit DOS analysis](docs/ghidra-dos.md).
-For large binaries, raise its startup deadline with
-`REA_GHIDRA_STARTUP_TIMEOUT_MS`.
-For provider selection, see the [CLI guide](docs/cli.md#choose-a-provider).
-Check [release availability](docs/installation.md#released-package-and-main)
-for features added since the latest npm release.
-
-## Showcases
-
-[![Illustrations of the DX-Ball sound-pan, Notion clipboard-bridge, and TH04 bullet-ring showcases](docs/assets/rea-showcases.png)](https://rea.tools/showcase/)
-
-### DX-Ball: reconstruct a sound-pan calculation
-
-Follow a sound call into its position-to-pan helper, inspect the instructions,
-and turn incomplete pseudocode into C. The reconstruction passes 3,205
-original-x86 cases and reproduces all 63 compiled function bytes.
-
-[Read the case study](https://rea.tools/showcase/dx-ball/) ·
-[Reconstruction repository](https://github.com/N0zoM1z0/dx-ball)
-
-### Notion: trace the Electron clipboard bridge
-
-Find the renderer's clipboard API, follow it through preload and IPC into the
-main process, and inspect the rich clipboard format.
-
-[Read the case study](https://rea.tools/showcase/notion/)
-
-### TH04: recover a DOS bullet-ring calculation
-
-Inspect the original PC-98 game's 16-bit instructions, recover the fixed and
-aimed angle calculations, and compare the reconstructed C++ with the
-historical compiler output.
-
-[Read the case study](https://rea.tools/showcase/th04/) ·
-[Reconstruction repository](https://github.com/N0zoM1z0/th04)
-
-If you've used REA on something interesting, we'd love to see it. Share your
-case in an [issue](https://github.com/morluto/rea/issues) or a
-[pull request](https://github.com/morluto/rea/pulls), including the target,
-your question, how REA helped, and what you found.
-
-## FAQ
-
-<details>
-<summary><strong>Which agents can use REA?</strong></summary>
-
-Any agent that supports local MCP servers. Setup configures the
-[supported agents](docs/installation.md#supported-agents); other clients can use
-[manual MCP registration](docs/installation.md#mcp-registry).
-
-</details>
-
-<details>
-<summary><strong>Do I need Hopper, Ghidra or IDA?</strong></summary>
-
-Deep native analysis uses one of them. Static JavaScript and .NET inspection
-work without a native analysis engine. Setup can install Hopper after approval;
-Ghidra and IDA use your existing installations. See [provider setup](docs/installation.md#hopper).
-
-</details>
-
-<details>
-<summary><strong>Do I need to start Hopper first?</strong></summary>
-
-REA starts Hopper when an operation needs it. On macOS, a first-run dialog may
-ask you to choose demo mode or activate your license. See
-[Hopper startup and troubleshooting](docs/installation.md#launcher-paths-and-troubleshooting).
-
-</details>
-
-<details>
-<summary><strong>What does installing the skill from skills.sh do?</strong></summary>
-
-The skill supplies investigation instructions for your agent. Use `npx rea-agents setup`
-to register REA's MCP server and install the matching instructions, then restart
-your agent. See [skill-only installation](docs/installation.md#skill-only-installation).
-
-</details>
-
-<details>
-<summary><strong>What code does REA return?</strong></summary>
-
-Native analysis returns pseudocode and assembly. JavaScript/Electron analysis
-recovers modules and their relationships. Your agent uses these findings to
-write and test an implementation; the [showcases](#showcases) give worked examples.
-
-</details>
-
-<details>
-<summary><strong>Does REA upload my app?</strong></summary>
-
-REA analyzes targets locally. Your agent receives the tool results, and its
-model provider has its own data policy.
-
-</details>
-
-<details>
-<summary><strong>What should I do if I hit a bug?</strong></summary>
-
-Update first; a recent release may already fix it.
-
-For an npm-installed CLI:
-
-```bash
-rea update
+```json
+{
+  "question": "Trace the search IPC channel and show its supporting source",
+  "target": "C:/analysis/selected-app",
+  "workspace": "C:/analysis/results",
+  "review": false
+}
 ```
 
-For agent setup through `npx`:
+REA creates a fresh run directory, copies the selected local target, gives its working path to internal agents, executes their local tool requests, and retains observations and reports. The client only starts/reads/cancels. Commands use the launching user's permissions: process ownership and workspace-scoped file tooling are **not an OS sandbox**.
 
-```bash
-npx rea-agents@latest setup
-```
+Local Evidence remains intact. Explicit `sensitive_values` are redacted from model context. Model credentials are excluded from child environments. Findings remain inferred; deterministic verification owns finite pass/fail/unknown results. Request/token budgets are not dollar caps; optional spending admission and upstream key limits are separate.
 
-If you're using an agent, complete the [setup refresh](#update-rea) and restart
-it. Retry the same task. If the problem persists, [open an issue](https://github.com/morluto/rea/issues)
-with your REA version, target type, steps to reproduce and error output.
+## Migration and verification
 
-</details>
+[Preservation map](docs/migration-plan.md) · [retained source manifest](docs/retained-source-manifest.json)
 
-## Documentation
+Broad target coverage is tracked in the [capability parity assessment](docs/capability-parity.md)
+and its [machine-readable requirements](docs/capability-parity.json). The internal
+guide includes routes for all 15 original target families; a route is not proof
+that its utilities are available or its results match the original.
 
-Start with the website's [worked guides](https://rea.tools/guides/).
-For exact options, prerequisites and result contracts:
+After building, use the pinned Node/npm to run `npm run verify:parity`. It reads
+the sibling `../rea-main` checkout by default; select another existing checkout
+with `npm run verify:parity -- --original C:/analysis/rea-main`. This runs three
+finite, scripted internal assignments, compares actual original CLI results,
+measures stdio discovery and offline package payloads, and retains full reports
+under `.cache/parity-*`. No inference, install, or original source edit occurs.
+It needs the original's existing build and installed ASAR utility. This optional
+acceptance dependency is not part of the shipped application.
 
-- [Installation and setup](docs/installation.md): agent registration, provider configuration, updates and uninstall.
-- [Readiness and troubleshooting](docs/installation.md#check-readiness-for-your-task): diagnose one agent or analysis engine.
-- [CLI and Evidence](docs/cli.md): commands, provider selection, snapshots, import/export and exit statuses.
-- [MCP contracts](docs/mcp-contracts.md) and [agent prompts](docs/mcp-prompts.md): tool results, sessions and guided investigations.
-- [Tool catalog](docs/mcp-contracts.md#generated-catalog): generated inventory of tools, providers and CLI commands.
-- [Roadmap](docs/roadmap.md): planned work and capability trackers.
+`npm run verify:parity:strict` performs those checks and exits unsuccessfully
+while full target/model parity remains unverified. Passing the bounded checks
+alone must never be described as equal power. Package bytes exclude installed
+dependencies and external analysis tools; timings compare different amounts of
+work and are not a model-efficiency benchmark.
 
-Report vulnerabilities through [SECURITY.md](SECURITY.md).
+Existing feature formats and SQLite revisions are retained. The separate default store is `~/.rea-mcp-app/feature-projects.sqlite`. Back up an existing database before explicitly selecting it. Runs never replay automatically after restart.
 
-## Disclaimer
+`npm test` exercises the MCP boundary, simulated model decisions, real owned command execution, cancellation/descendants, partial output, scoped file failures, project revisions and export receipts. This does not establish paid-model quality, every provider, universal capability parity or installed-host visual acceptance. Matching task comparisons are required for efficiency claims.
 
-REA provides tools for lawful reverse-engineering research, analysis, and reconstruction. You are responsible for obtaining any required authorization and complying with applicable laws. The project does not endorse illegal or unauthorized use.
+After building, `npm run preview` starts a local UI fixture with simulated decisions and the real runtime. It makes no inference-provider calls. If a Windows build lacks its packaged native artifact, select a matching native directory as described above.
 
-REA is an open-source software project. We have not issued or endorsed any cryptocurrency or token. Tokens using the REA name are not affiliated with the project.
-
-## Contributing
-
-We'd love your help with REA! [Open an issue](https://github.com/cavanaughdesignstudio/rea/issues) to
-report a bug or suggest a feature, or [send a pull request](https://github.com/morluto/rea/pulls)
-to improve the code or docs.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and checks,
-[testing](docs/testing.md) for verification lanes, and the
-[architecture map](docs/architecture.mermaid) for the project structure.
-
-## License
-
-[MIT](LICENSE)
+The original [leanrea README](docs/leanrea-upstream-readme.md) and `bench/` remain upstream evidence, not benchmarks of this new app. leanrea is credited to aicodeking. Retained REA code is credited to morluto and contributors under [their MIT license](third_party/rea.LICENSE).

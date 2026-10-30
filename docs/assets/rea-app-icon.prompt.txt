@@ -1,6 +1,0 @@
-Generated with the built-in image tool on 2026-10-11.
-Reference: user-supplied gear and circular-arrow example.
-Selected output: rea-app-icon.png (white background).
-
-Final prompt:
-Design a new REA application icon similar to this example, using a perfectly clean PURE WHITE background like the reference. Original clean flat vector artwork, square 1:1, centered and fully contained with generous safe padding. Bold eight-tooth engineering gear, circular central hub with an integrated simple magnifying glass, surrounded by two opposing circular arrow arcs and a few balanced short curved orbit segments. Smooth elegant gradient from medium blue through rich violet to coral/rose. Thick balanced geometric strokes, rounded corners, clear silhouette at small sizes. Absolutely NO Pro ribbon, no text or letters, no watermark. Pure white negative spaces inside and around the icon, no transparency, no texture, no grain, no grunge, no stray dots, no glow or shadows, no bevels. Precision clean vector-like logo on white, professional and polished.

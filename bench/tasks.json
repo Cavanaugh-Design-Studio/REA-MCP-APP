@@ -1,0 +1,51 @@
+[
+ {
+  "id": "electron",
+  "prompt": "app.asar in this folder is the Notion desktop app (Electron). Find out how Notion detects that another app is using the microphone (meeting detection). Report: (1) the native module file and the native function(s) it calls, (2) the main-process class that drives detection and its two modes, (3) the IPC channel a renderer sends to START detection, (4) the IPC channel main broadcasts when the process list changes. Keep the answer short; cite file paths.",
+  "key": {
+   "native fn": "getRunningInputAudioProcesses",
+   "module": "mac_utils",
+   "class": "AudioController",
+   "start ch": "notion:initialize-running-input-audio-process-detection",
+   "event ch": "notion:running-input-audio-processes-changed-v2"
+  }
+ },
+ {
+  "id": "native",
+  "prompt": "mac_utils.node in this folder is a macOS Node native addon from a desktop app. Report: (1) every JS-callable function name it exports, (2) exactly how checkAudioCaptureAccess decides the permission state (framework, function, service name), (3) how requestSingleInstanceLock works (mechanism and filesystem path). Keep the answer short.",
+  "key": {
+   "TCC fw": "TCC\\.framework|TCC framework",
+   "preflight": "TCCAccessPreflight",
+   "service": "kTCCServiceAudioCapture",
+   "socket": "(unix|domain|AF_UNIX|local) ?(domain )?socket",
+   "path": "/tmp/com\\.notion\\.singleinstance",
+   "fn1": "isWindowOccluded",
+   "fn2": "getProcessesAccessingSpeakersWithResult",
+   "fn3": "isSchemeHandlerPresent"
+  }
+ },
+ {
+  "id": "go",
+  "prompt": "gh in this folder is a compiled binary. Without running it, report: the language/toolchain version it was built with, its main package path, and the exact versions of the dependencies github.com/cli/go-gh/v2 and golang.org/x/crypto. Keep the answer short.",
+  "key": {
+   "go ver": "go1\\.27\\.1",
+   "path": "github\\.com/cli/cli/v2/cmd/gh",
+   "go-gh": "v2\\.16\\.1",
+   "crypto": "v0\\.57\\.0"
+  }
+ },
+ {
+  "id": "deep",
+  "prompt": "mac_utils.node in this folder is a macOS Node native addon. Reverse engineer its single-instance lock (requestSingleInstanceLock) precisely from the binary: (1) the exact socket path format and what each variable part is computed from, (2) the wire protocol a second instance uses to send its data, (3) how the first instance authenticates the connecting peer. Keep the answer short.",
+  "key": {
+   "prefix": "/tmp/com\\.notion\\.singleinstance\\.",
+   "euid": "geteuid|effective (user|uid)|euid",
+   "hash": "hash",
+   "exe": "proc_pidpath|executable('s)? path|exe(cutable)? path|binary path",
+   "sock": "\\.sock",
+   "len": "length[- ]prefix|4[- ]byte|uint32|size prefix|length header",
+   "peer": "getpeereid",
+   "json": "JSON"
+  }
+ }
+]

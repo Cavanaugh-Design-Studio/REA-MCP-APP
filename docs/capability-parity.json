@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "baseline": "rea-agents 6.3.0 local source, README.md#what-you-can-analyze",
+  "scope": "Target families, not the original provider/tool catalog. Recipe coverage is not engine or behavioral parity.",
+  "families": [
+    {
+      "id": "native",
+      "name": "Native Mach-O, ELF, PE and DOS",
+      "reference": "docs/installation.md",
+      "required": "Architecture-correct decompilation, symbols, xrefs, call/value flow, original addresses and provider lifecycle",
+      "gap": "No real Ghidra, IDA or Hopper engine comparison; plain command output does not populate native relationship views."
+    },
+    {
+      "id": "elf-layout",
+      "name": "Offline ELF layout",
+      "reference": "docs/binary-diagnostics.md",
+      "required": "Sections, segments, symbols, relocations, static mitigations and partial coverage",
+      "gap": "No matched pwntools/binutils fixture lane on the supported Linux host."
+    },
+    {
+      "id": "evm",
+      "name": "EVM bytecode",
+      "reference": "docs/evm-bytecode.md",
+      "required": "Raw/hex carriers, PUSH offsets, dispatch selectors and qualified argument/mutability inference",
+      "gap": "No matched offline dispatch or malformed-bytecode lane."
+    },
+    {
+      "id": "recorded-crashes",
+      "name": "Recorded Linux crashes",
+      "reference": "docs/recorded-crashes.md",
+      "required": "All recorded threads, register/signal notes and identity-qualified mappings",
+      "gap": "No matched Linux core fixture, pwntools or GDB lane."
+    },
+    {
+      "id": "javascript",
+      "name": "JavaScript and Electron",
+      "reference": "docs/javascript-artifact-reconstruction.md",
+      "required": "Packages, modules, imports, source maps, IPC/native boundaries, relationship graphs and unresolved expressions",
+      "gap": "Two static fixture probes cover entrypoint, one IPC literal and source digest. AST graphs, source maps, dynamic boundaries and runtime capture remain unverified."
+    },
+    {
+      "id": "websites",
+      "name": "Websites",
+      "reference": "docs/browser-observation.md",
+      "required": "Selected page/actions, scripts, DOM/accessibility, network, screenshots and owned browser lifecycle",
+      "gap": "Installed-host workbench rendering is not target website capture. No matched browser scenario execution lane."
+    },
+    {
+      "id": "network-captures",
+      "name": "Saved network captures",
+      "reference": "docs/web-network-captures.md",
+      "required": "HAR/mitmproxy producer identities, payload bytes, source pointers, redaction and malformed/partial cases",
+      "gap": "One public HAR fixture matches URL, HTTP status and text. Canonical network projection, secrets and mitmproxy remain unverified."
+    },
+    {
+      "id": "managed",
+      "name": ".NET assemblies",
+      "reference": "docs/managed-code-analysis.md",
+      "required": "Metadata/member identities, CIL offsets, native boundaries and build comparisons",
+      "gap": "Original has built-in static inspection. App recipes require an installed metadata/decompiler utility; no equivalent managed lane has been established."
+    },
+    {
+      "id": "android-code",
+      "name": "Android APK code",
+      "reference": "docs/android-analysis.md",
+      "required": "Manifest/classes, methods, references and decompiler failures on the supported host",
+      "gap": "No configured JADX/JDK fixture comparison; ZIP inventory alone is insufficient."
+    },
+    {
+      "id": "android-devices",
+      "name": "Android devices",
+      "reference": "docs/adb-device-analysis.md",
+      "required": "Explicit serial, packages/processes/logs/dumps, captures and exact transfer destinations",
+      "gap": "No selected device or adb acceptance lane; read-only recipes do not prove device behavior."
+    },
+    {
+      "id": "jeb",
+      "name": "JEB projects",
+      "reference": "docs/jeb-analysis.md",
+      "required": "Selected project/unit IDs, digests, type/method pseudocode and read-only attachment",
+      "gap": "No selected running JEB endpoint or engine comparison."
+    },
+    {
+      "id": "android-resources",
+      "name": "Android resources",
+      "reference": "docs/apktool-resource-analysis.md",
+      "required": "Decoded manifest, resource identities, string tables, locales and version facts",
+      "gap": "No configured Apktool/JDK comparison; binary XML cannot be replaced by text searching."
+    },
+    {
+      "id": "firmware",
+      "name": "Firmware",
+      "reference": "docs/firmware-analysis.md",
+      "required": "Region coordinates, extraction integrity/limits and native handoffs",
+      "gap": "No supported-host binwalk/unblob lane or matched extraction fixture."
+    },
+    {
+      "id": "packages",
+      "name": "Packages and Apple resources",
+      "reference": "docs/apple-application-analysis.md",
+      "required": "Inventories/digests, plists, bundle anatomy, keyed archives and asset resources",
+      "gap": "ASAR source extraction covers one package format only; Apple and broader archive semantics remain unverified."
+    },
+    {
+      "id": "process",
+      "name": "Process behavior",
+      "reference": "docs/process-capture.md",
+      "required": "Terminal interactions, exit/filesystem observations, canonical captures and comparisons",
+      "gap": "Owned pipe execution, descendant cancellation and partial output are tested. PTY interactions, filesystem tracing and canonical process capture generation are not implemented by run_command."
+    }
+  ]
+}
