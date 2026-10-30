@@ -1,4 +1,23 @@
 @import url("./tokens.css");
+.table-scroll {
+  overflow: auto;
+  margin: 16px 0;
+}
+.table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.table-scroll th,
+.table-scroll td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.table-scroll th {
+  color: var(--muted);
+}
 * {
   box-sizing: border-box;
 }

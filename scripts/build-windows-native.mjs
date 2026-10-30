@@ -128,9 +128,8 @@ run(compiler, [
   "-o",
   join(output, artifact),
 ]);
-const packageJson = JSON.parse(
-  await readFile(join(root, "package.json"), "utf8"),
-);
+const { PACKAGE_METADATA: packageJson } =
+  await import("../dist/retained/generatedPackageMetadata.js");
 const bytes = await readFile(join(output, artifact));
 const metadata = {
   packageVersion: packageJson.version,

@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["ui/**/*.ts", "tests/fixtures/workbench-host/**/*.ts"]
+  "include": ["ui/**/*.ts"]
 }

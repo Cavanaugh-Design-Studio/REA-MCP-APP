@@ -3,11 +3,12 @@ import {
   applyHostStyleVariables,
   applyHostFonts,
 } from "@modelcontextprotocol/ext-apps";
-import type { InvestigationRun } from "../src/domain/agentInvestigation.js";
-import type { Evidence } from "../src/domain/evidence.js";
+import type { InvestigationRun } from "../src/retained/domain/agentInvestigation.js";
+import type { Evidence } from "../src/retained/domain/evidence.js";
 import { CallToolResultSchema } from "@modelcontextprotocol/core";
 import "./workbench.css";
 import { FeatureWorkspace } from "./featureWorkspace.js";
+import { renderAnalysisGraphs, bindAnalysisGraphs } from "./analysisGraph.js";
 
 const app = new App(
   { name: "REA Investigation Workbench", version: "1.0.0" },
@@ -42,7 +43,10 @@ let featureAssignment: {
 } | null = null;
 const formState = {
   review: false,
-  functionAnalysis: false,
+  functionAnalysis: true,
+  webSearch: false,
+  target: "",
+  workspace: "",
   requests: "8",
   tokens: "2048",
   context: "262144",
@@ -89,6 +93,11 @@ const features = new FeatureWorkspace({
       expected_revision: project.revision,
     };
     question = project.definition.goal;
+    formState.target = project.definition.original.location;
+    formState.workspace =
+      project.definition.candidate?.kind === "workspace"
+        ? project.definition.candidate.location
+        : "";
     selected.clear();
     for (const item of project.definition.evidence_bundle.records) {
       addEvidence(item);
@@ -97,16 +106,22 @@ const features = new FeatureWorkspace({
     view = "overview";
   },
   discuss: async (text) => {
-    if (standalone)
-      throw new Error(
-        "Use the original App to send this feature task to the main agent.",
-      );
-    const result = await app.sendMessage({
-      role: "user",
-      content: [{ type: "text", text }],
-    });
-    if (result.isError)
-      throw new Error("The host rejected the feature handoff.");
+    const started = unwrap(
+      await call("start_investigation", {
+        question: text,
+        ...(formState.target ? { target: formState.target } : {}),
+        ...(formState.workspace ? { workspace: formState.workspace } : {}),
+        ...(featureAssignment ? { feature: featureAssignment } : {}),
+        sources: [...selected].map((evidence_id) => ({
+          kind: "inline-evidence",
+          evidence: evidence.get(evidence_id),
+        })),
+        review: false,
+      }),
+    );
+    await readRun(String(started.run_id), false);
+    view = "overview";
+    schedulePoll();
   },
 });
 const icon = (name: string) =>
@@ -120,7 +135,7 @@ const sourceList = () =>
   evidence.size === 0
     ? empty(
         "No evidence collected yet",
-        "Analyze a target in chat or import a canonical bundle to begin.",
+        "Select a target and start an internal investigation, or import a canonical bundle.",
       )
     : `<div class="evidence-list">${[...evidence.values()].map((item) => `<div class="evidence-row"><input type="checkbox" data-select="${escape(item.evidence_id)}" aria-label="Include ${escape(sourceName(item))} in investigation" ${selected.has(item.evidence_id) ? "checked" : ""}><div><button data-source="${escape(item.evidence_id)}">${escape(sourceName(item))}</button><small>${escape(item.evidence_id.slice(0, 19))} · ${escape(item.confidence)}</small></div></div>`).join("")}</div>`;
 const currentEvidence = () =>
@@ -137,7 +152,7 @@ function team(): string {
 }
 
 function investigationForm(): string {
-  return `<section class="panel"><div class="panel-head"><h2>Delegate a question</h2>${badge(`${selected.size} sources selected`, "blue")}</div><form id="investigation-form"><label for="question">What should REA investigate?</label><textarea id="question" name="question" placeholder="Explain this function’s behavior and identify what the evidence does not establish." required>${escape(question)}</textarea>${!engine.enabled ? '<div class="notice">Cloud inference is disabled. Configure the analyst model and API key on the REA server to enable the team.</div>' : '<div class="notice">Starting sends this question and selected Evidence to OpenRouter. Local source records remain intact.</div>'}<div class="checks"><label><input id="review" type="checkbox" ${engine.models?.reviewer ? "checked" : "disabled"}> Include reviewer</label><label><input id="function-analysis" type="checkbox" ${session.open ? "" : "disabled"}> Allow native function analysis</label></div><details><summary>Investigation budgets and sensitive values</summary><div class="budgets"><div><label for="requests">Model requests</label><input id="requests" type="number" min="1" value="8" required></div><div><label for="tokens">Output tokens / request</label><input id="tokens" type="number" min="1" value="2048" required></div><div><label for="context">Context bytes</label><input id="context" type="number" min="1" value="262144" required></div><div><label for="deadline">Deadline, seconds</label><input id="deadline" type="number" min="1" max="2147483" value="120" required></div></div><label for="sensitive">Values to redact from model input, one per line</label><textarea id="sensitive" placeholder="Explicit values only; local Evidence is preserved"></textarea></details><div class="form-end"><small>Reports cite exact Evidence. Model agreement remains an interpretation.</small><button class="primary" type="submit" ${!connected || !engine.enabled || busy || run?.state === "running" ? "disabled" : ""}>${busy || run?.state === "running" ? '<span class="spinner"></span> Investigation running' : "Start investigation"}</button></div></form></section>`;
+  return `<section class="panel"><div class="panel-head"><h2>Delegate a question</h2>${badge(`${selected.size} sources selected`, "blue")}</div><form id="investigation-form"><label for="question">What should REA investigate?</label><textarea id="question" name="question" placeholder="Explain this function’s behavior and identify what the evidence does not establish." required>${escape(question)}</textarea><label for="target">Target path or URL</label><input id="target" value="${escape(formState.target)}" placeholder="Absolute artifact path, app directory, or website URL"><label for="workspace">Output workspace (optional)</label><input id="workspace" value="${escape(formState.workspace)}" placeholder="REA creates a fresh run directory here">${!engine.enabled ? '<div class="notice">Cloud inference is disabled. Configure the analyst model and API key on the REA server to enable the team.</div>' : '<div class="notice">Starting sends this question and selected Evidence to OpenRouter. Local source records remain intact.</div>'}<div class="checks"><label><input id="review" type="checkbox" ${engine.models?.reviewer ? "checked" : "disabled"}> Include reviewer</label><label><input id="function-analysis" type="checkbox"> Run local analysis tools</label><label><input id="web-search" type="checkbox"> Allow public Brave searches (up to 3)</label></div><details><summary>Investigation budgets and sensitive values</summary><div class="budgets"><div><label for="requests">Model requests</label><input id="requests" type="number" min="1" value="8" required></div><div><label for="tokens">Output tokens / request</label><input id="tokens" type="number" min="1" value="2048" required></div><div><label for="context">Context bytes</label><input id="context" type="number" min="1" value="262144" required></div><div><label for="deadline">Deadline, seconds</label><input id="deadline" type="number" min="1" max="2147483" value="120" required></div></div><label for="sensitive">Values to redact from model input, one per line</label><textarea id="sensitive" placeholder="Explicit values only; local Evidence is preserved"></textarea></details><div class="form-end"><small>Reports cite exact Evidence. Model agreement remains an interpretation.</small><button class="primary" type="submit" ${!connected || !engine.enabled || busy || run?.state === "running" ? "disabled" : ""}>${busy || run?.state === "running" ? '<span class="spinner"></span> Investigation running' : "Start investigation"}</button></div></form></section>`;
 }
 
 function evidenceDetail(): string {
@@ -157,14 +172,14 @@ function content(): string {
   if (view === "evidence")
     return `<div class="columns"><section class="panel"><div class="panel-head"><h2>Evidence ledger</h2><button id="load-evidence" ${!connected ? "disabled" : ""}>Refresh</button></div>${sourceList()}<div class="tabs"><button id="import-bundle" ${!connected ? "disabled" : ""}>Import local bundle</button><button id="export-bundle" ${!connected ? "disabled" : ""}>Export local bundle</button></div></section><section class="panel">${evidenceDetail()}</section></div>`;
   if (view === "code")
-    return `<div class="columns"><section class="panel"><h2>Code explorer</h2><p class="muted">Select a retained function or application analysis.</p>${sourceList()}<form id="function-form"><label for="procedure">Native symbol or provider address</label><input id="procedure" required placeholder="main or a provider-returned address"><button type="submit" style="margin-top:10px" ${!connected || !session.open || busy ? "disabled" : ""}>Analyze function</button></form></section><section class="panel"><div class="panel-head"><h2>Selected analysis view</h2>${badge("Retained evidence", "blue")}</div><label for="facet">Function facet</label><select id="facet">${["pseudocode", "assembly", "basic_blocks", "callers", "callees", "referenced_strings", "comments"].map((facet) => `<option ${facet === codeFacet ? "selected" : ""}>${facet}</option>`).join("")}</select><div class="tabs"><button id="read-code" ${!connected || !selectedId || busy ? "disabled" : ""}>Read selected facet</button><button id="read-summary" ${!connected || !selectedId || busy ? "disabled" : ""}>Read summary</button></div>${codePage ? `<pre class="code">${escape(JSON.stringify(codePage, null, 2))}</pre>` : empty("No view selected", "Reading a retained view does not rerun its provider.")}</section></div>`;
+    return `<div class="columns"><section class="panel"><h2>Code explorer</h2><p class="muted">Select a retained function or application analysis.</p>${sourceList()}<form id="function-form"><label for="procedure">Native symbol or provider address</label><input id="procedure" required placeholder="main or a provider-returned address"><button type="submit" style="margin-top:10px" ${!connected || !engine.enabled || busy ? "disabled" : ""}>Analyze function</button></form></section><section class="panel"><div class="panel-head"><h2>Selected analysis view</h2>${badge("Retained evidence", "blue")}</div><label for="facet">Function facet</label><select id="facet">${["pseudocode", "assembly", "basic_blocks", "callers", "callees", "referenced_strings", "comments"].map((facet) => `<option ${facet === codeFacet ? "selected" : ""}>${facet}</option>`).join("")}</select><div class="tabs"><button id="read-code" ${!connected || !selectedId || busy ? "disabled" : ""}>Read selected facet</button><button id="read-summary" ${!connected || !selectedId || busy ? "disabled" : ""}>Read summary</button></div>${codePage ? `<pre class="code">${escape(JSON.stringify(codePage, null, 2))}</pre>` : empty("No view selected", "Reading a retained view does not rerun its provider.")}</section></div>`;
   if (view === "relationships")
-    return `<section class="panel"><div class="panel-head"><h2>Evidence provenance</h2>${badge("Explicit source links", "blue")}</div><p class="muted">These relationships are recorded Evidence links. Missing links remain unknown.</p>${evidence.size ? [...evidence.values()].map((item) => `<div class="path"><button data-source="${escape(item.evidence_id)}">${escape(sourceName(item))}</button><p>${escape(item.evidence_id)}</p>${item.evidence_links.length ? item.evidence_links.map((id) => `<button class="cite" data-source="${escape(id)}">Source ${escape(id.slice(0, 19))}</button>`).join("") : "<small>No supporting Evidence links recorded</small>"}</div>`).join("") : empty("No relationship evidence", "Collect source records to explore their provenance.")}</section>`;
+    return `${renderAnalysisGraphs(evidence.values())}<section class="panel"><div class="panel-head"><h2>Evidence provenance</h2>${badge("Explicit source links", "blue")}</div><p class="muted">These relationships are recorded Evidence links. Missing links remain unknown.</p>${evidence.size ? [...evidence.values()].map((item) => `<div class="path"><button data-source="${escape(item.evidence_id)}">${escape(sourceName(item))}</button><p>${escape(item.evidence_id)}</p>${item.evidence_links.length ? item.evidence_links.map((id) => `<button class="cite" data-source="${escape(id)}">Source ${escape(id.slice(0, 19))}</button>`).join("") : "<small>No supporting Evidence links recorded</small>"}</div>`).join("") : empty("No relationship evidence", "Collect source records to explore their provenance.")}</section>`;
   if (view === "comparisons") {
     const items = [...evidence.values()].filter((item) =>
       /compare|changed_behavior|correlate/.test(item.operation),
     );
-    return `<section class="panel"><div class="panel-head"><h2>Comparison workspace</h2><button id="discuss-comparison" ${!connected ? "disabled" : ""}>Ask main agent to compare</button></div><p class="muted">Inspect comparison workflows returned in chat. Select explicit observation pairs; incomplete coverage remains unresolved.</p>${items.length ? items.map((item) => `<details><summary>${escape(sourceName(item))} · ${escape(item.confidence)}</summary><pre class="code">${escape(JSON.stringify(item.normalized_result, null, 2))}</pre></details>`).join("") : empty("No comparison collected", "Ask the main agent to compare functions, artifacts, application versions or runtime captures.")}</section>`;
+    return `<section class="panel"><div class="panel-head"><h2>Comparison workspace</h2><button id="discuss-comparison" ${!connected ? "disabled" : ""}>Assign comparison to internal agent</button></div><p class="muted">Inspect comparison workflows returned in chat. Select explicit observation pairs; incomplete coverage remains unresolved.</p>${items.length ? items.map((item) => `<details><summary>${escape(sourceName(item))} · ${escape(item.confidence)}</summary><pre class="code">${escape(JSON.stringify(item.normalized_result, null, 2))}</pre></details>`).join("") : empty("No comparison collected", "Assign an internal investigation to compare selected observations.")}</section>`;
   }
   return `<section class="panel"><div class="panel-head"><h2>Residual unknowns</h2><button id="load-unknowns" ${!connected ? "disabled" : ""}>Refresh unknowns</button></div><p class="muted">Session records preserve revision history and distinguish dispositions from verified truth.</p>${unknowns.length ? unknowns.map((item) => `<details><summary class="amber">${escape(object(item).question ?? object(item).unknown_id ?? "Residual unknown")}</summary><pre class="code">${escape(JSON.stringify(item, null, 2))}</pre></details>`).join("") : empty("No unknown records loaded", "Refresh to inspect the session’s explicit uncertainty ledger.")}${run?.analyst?.unknowns.length ? `<h3 style="margin-top:20px">AI-proposed questions ${badge("Inferred", "amber")}</h3><ul>${run.analyst.unknowns.map((item) => `<li>${escape(item)}</li>`).join("")}</ul>` : ""}</section>`;
 }
@@ -189,7 +204,10 @@ function render(): void {
     formState.functionAnalysis = (
       document.getElementById("function-analysis") as HTMLInputElement
     ).checked;
+    formState.webSearch = (document.getElementById("web-search") as HTMLInputElement).checked;
     for (const name of [
+      "target",
+      "workspace",
       "requests",
       "tokens",
       "context",
@@ -222,7 +240,7 @@ function render(): void {
     )
     .join(
       "",
-    )}</nav><div class="rail-bottom"><div class="eyebrow">Evidence language</div><div class="legend"><span class="blue"><i class="dot"></i>Observed facts</span><span class="violet"><i class="dot"></i>AI interpretations</span><span class="amber"><i class="dot"></i>Unresolved questions</span><span class="rose"><i class="dot"></i>Failures / contradictions</span></div></div></aside><main><header class="topbar"><div><div class="eyebrow" style="margin-bottom:7px">REA / Workbench</div><h1>${escape(({ overview: "Investigation workspace", features: "Feature workspace", evidence: "Evidence ledger", code: "Code explorer", relationships: "Relationships", comparisons: "Comparisons", unknowns: "Unknowns" } as Record<string, string>)[view] ?? "REA workbench")}</h1></div><div class="actions"><button id="theme">${document.documentElement.dataset.theme === "light" ? "Dark" : "Light"} theme</button><button id="fullscreen" ${!connected || fullscreenBusy ? "disabled" : ""} title="${standalone || availableModes.includes("fullscreen") ? "Toggle fullscreen" : "Open the live workbench in a browser"}">${displayMode === "fullscreen" ? "Exit fullscreen" : "Fullscreen"}</button><button id="refresh" ${!connected || busy ? "disabled" : ""}>Refresh</button></div></header><div class="intro"><div><h2>Follow the evidence. Keep the uncertainty.</h2><p>A scoped analyst and reviewer work together, with every interpretation linked to its source.</p></div>${badge(connected ? (engine.enabled ? "Cloud engine enabled" : "Local analysis · AI disabled") : "Connecting to host", connected ? "blue" : "amber")}</div><div id="error" role="alert">${error ? `<div class="notice error">${escape(error)}</div>` : ""}</div><section class="metrics" aria-label="Investigation summary"><div class="metric"><span>COLLECTED EVIDENCE</span><strong>${evidence.size.toString().padStart(2, "0")}</strong><small>Source observations</small></div><div class="metric"><span>INFERRED FINDINGS</span><strong>${findings.toString().padStart(2, "0")}</strong><small>Analyst + reviewer</small></div><div class="metric"><span>OPEN QUESTIONS</span><strong>${(run?.analyst?.unknowns.length ?? unknowns.length).toString().padStart(2, "0")}</strong><small>Uncertainty stays explicit</small></div><div class="metric"><span>MODEL REQUESTS</span><strong>${(run?.generations.length ?? 0).toString().padStart(2, "0")}</strong><small>${run?.generations.some((item) => item.cost_usd === null) ? "Some costs unknown" : `Reported cost $${(run?.generations.reduce((total, item) => total + (item.cost_usd ?? 0), 0) ?? 0).toFixed(4)}`}</small></div></section>${content()}<footer class="footer"><span>${escape(session.path ?? "No active target")} · ${escape(run ? run.run_id.slice(0, 12) : "No active assignment")}</span><span>Local analysis / optional cloud reasoning</span></footer></main></div>`;
+    )}</nav><div class="rail-bottom"><div class="eyebrow">Evidence language</div><div class="legend"><span class="blue"><i class="dot"></i>Observed facts</span><span class="violet"><i class="dot"></i>AI interpretations</span><span class="amber"><i class="dot"></i>Unresolved questions</span><span class="rose"><i class="dot"></i>Failures / contradictions</span></div></div></aside><main><header class="topbar"><div><div class="eyebrow" style="margin-bottom:7px">REA / Workbench</div><h1>${escape(({ overview: "Investigation workspace", features: "Feature workspace", evidence: "Evidence ledger", code: "Code explorer", relationships: "Relationships", comparisons: "Comparisons", unknowns: "Unknowns" } as Record<string, string>)[view] ?? "REA workbench")}</h1></div><div class="actions"><button id="theme">${document.documentElement.dataset.theme === "light" ? "Dark" : "Light"} theme</button><button id="fullscreen" ${!connected || fullscreenBusy ? "disabled" : ""} title="${standalone || availableModes.includes("fullscreen") ? "Toggle fullscreen" : "Open the live workbench in a browser"}">${displayMode === "fullscreen" ? "Exit fullscreen" : "Fullscreen"}</button><button id="refresh" ${!connected || busy ? "disabled" : ""}>Refresh</button></div></header><div class="intro"><div><h2>Follow the evidence. Keep the uncertainty.</h2><p>Internal agents investigate the target with leanrea and installed local tools. Every finding links to Evidence.</p></div>${badge(connected ? (engine.enabled ? "Cloud engine enabled" : "Local analysis · AI disabled") : "Connecting to host", connected ? "blue" : "amber")}</div><div id="error" role="alert">${error ? `<div class="notice error">${escape(error)}</div>` : ""}</div><section class="metrics" aria-label="Investigation summary"><div class="metric"><span>COLLECTED EVIDENCE</span><strong>${evidence.size.toString().padStart(2, "0")}</strong><small>Source observations</small></div><div class="metric"><span>INFERRED FINDINGS</span><strong>${findings.toString().padStart(2, "0")}</strong><small>Analyst + reviewer</small></div><div class="metric"><span>OPEN QUESTIONS</span><strong>${(run?.analyst?.unknowns.length ?? unknowns.length).toString().padStart(2, "0")}</strong><small>Uncertainty stays explicit</small></div><div class="metric"><span>MODEL REQUESTS</span><strong>${(run?.generations.length ?? 0).toString().padStart(2, "0")}</strong><small>${run?.generations.some((item) => item.cost_usd === null) ? "Some costs unknown" : `Reported cost $${(run?.generations.reduce((total, item) => total + (item.cost_usd ?? 0), 0) ?? 0).toFixed(4)}`}</small></div></section>${content()}<footer class="footer"><span>${escape(session.path ?? "No active target")} · ${escape(run ? run.run_id.slice(0, 12) : "No active assignment")}</span><span>Local analysis / optional cloud reasoning</span></footer></main></div>`;
   root
     .querySelector(".budgets")
     ?.insertAdjacentHTML(
@@ -269,7 +287,10 @@ function render(): void {
       formState.review;
     (document.getElementById("function-analysis") as HTMLInputElement).checked =
       formState.functionAnalysis;
+    (document.getElementById("web-search") as HTMLInputElement).checked = formState.webSearch;
     for (const name of [
+      "target",
+      "workspace",
       "requests",
       "tokens",
       "context",
@@ -430,7 +451,8 @@ function schedulePoll(): void {
   if (disposed || !run || run.state !== "running") return;
   pollTimer = setTimeout(() => {
     void perform(async () => {
-      await readRun(run!.run_id, false);
+      const latest = await readRun(run!.run_id, false);
+      if (latest.state !== "running") await readRun(latest.run_id, true);
       schedulePoll();
     });
   }, 1500);
@@ -605,6 +627,7 @@ function onForm(id: string, action: () => void): void {
 }
 
 function bind(): void {
+  bindAnalysisGraphs(render);
   features.bind(root);
   on("unlink-feature", () => {
     featureAssignment = null;
@@ -636,6 +659,10 @@ function bind(): void {
   document.getElementById("question")?.addEventListener("input", (event) => {
     question = (event.target as HTMLTextAreaElement).value;
   });
+  for (const field of ["target", "workspace"] as const)
+    document.getElementById(field)?.addEventListener("input", (event) => {
+      formState[field] = (event.target as HTMLInputElement).value;
+    });
   on("theme", () => {
     document.documentElement.dataset.theme =
       document.documentElement.dataset.theme === "light" ? "dark" : "light";
@@ -665,11 +692,48 @@ function bind(): void {
     codeFacet = (event.target as HTMLSelectElement).value;
   });
   const readView = async (summary: boolean) => {
+    const item = currentEvidence();
+    if (
+      item &&
+      [
+        "run_local_command",
+        "read_local_file",
+        "list_local_files",
+        "prepare_working_copy",
+        "write_local_file",
+        "local_tool_failure",
+      ].includes(item.operation)
+    ) {
+      codePage = item.normalized_result;
+      return;
+    }
     const data = await call("inspect_analysis_view", {
       source: { kind: "retained-evidence", evidence_id: selectedId },
-      view: summary
-        ? { kind: "summary" }
-        : { kind: "native", facet: codeFacet, offset: 0, limit: 2048 },
+      view:
+        item?.operation.startsWith("inspect_managed_") ||
+        item?.operation === "project_managed_application_graph"
+          ? summary
+            ? { kind: "summary" }
+            : {
+                kind: "page",
+                collection:
+                  item.operation === "project_managed_application_graph"
+                    ? "nodes"
+                    : item.operation === "inspect_managed_artifact"
+                      ? "references"
+                      : item.operation === "inspect_managed_native_boundaries"
+                        ? "pinvoke_imports"
+                        : "methods",
+                offset: 0,
+                limit: 50,
+              }
+          : item?.operation === "analyze_javascript_application"
+            ? summary
+              ? { kind: "summary" }
+              : { kind: "page", collection: "modules", offset: 0, limit: 50 }
+            : summary && item?.operation !== "analyze_function"
+              ? { kind: "summary" }
+              : { kind: "native", facet: codeFacet, offset: 0, limit: 2048 },
     });
     codePage = object(data).normalized_result;
   };
@@ -700,20 +764,20 @@ function bind(): void {
       );
   });
   on("discuss-comparison", async () => {
-    if (standalone)
-      throw new Error(
-        "Use the original chat to request a comparison of these selected Evidence records.",
-      );
-    const response = await app.sendMessage({
-      role: "user",
-      content: [
-        {
-          type: "text",
-          text: `Use REA comparison workflows to compare these explicitly selected Evidence records: ${JSON.stringify([...selected])}. Ask me to select the comparison pair if these do not identify two compatible observations.`,
-        },
-      ],
-    });
-    if (response.isError) throw new Error("The host rejected the message.");
+    const started = unwrap(
+      await call("start_investigation", {
+        question:
+          "Compare these selected observations. Identify compatible dimensions, preserve unsupported coverage and cite exact Evidence.",
+        sources: [...selected].map((evidence_id) => ({
+          kind: "retained-evidence",
+          evidence_id,
+        })),
+        review: false,
+      }),
+    );
+    await readRun(String(started.run_id), false);
+    view = "overview";
+    schedulePoll();
   });
   on("export-report", async () => {
     const complete = await readRun(run!.run_id, true);
@@ -774,7 +838,20 @@ function bind(): void {
     const procedure = (document.getElementById("procedure") as HTMLInputElement)
       .value;
     void perform(async () => {
-      await call("analyze_function", { procedure });
+      const started = unwrap(
+        await call("start_investigation", {
+          question: `Inspect the native function ${procedure}. Use installed native analysis tools, retain the disassembly or pseudocode and describe the exact coverage.`,
+          ...(formState.target ? { target: formState.target } : {}),
+          review: false,
+          sources: [...selected].map((evidence_id) => ({
+            kind: "retained-evidence",
+            evidence_id,
+          })),
+        }),
+      );
+      await readRun(String(started.run_id), false);
+      view = "overview";
+      schedulePoll();
     });
   });
   onForm("investigation-form", () => {
@@ -790,9 +867,14 @@ function bind(): void {
           : { kind: "retained-evidence", evidence_id },
       ),
       review: (document.getElementById("review") as HTMLInputElement).checked,
-      allow_function_analysis: (
+      ...(formState.target.trim() ? { target: formState.target.trim() } : {}),
+      ...(formState.workspace.trim()
+        ? { workspace: formState.workspace.trim() }
+        : {}),
+      allow_commands: (
         document.getElementById("function-analysis") as HTMLInputElement
       ).checked,
+      allow_web_search: (document.getElementById("web-search") as HTMLInputElement).checked,
       sensitive_values: (
         document.getElementById("sensitive") as HTMLTextAreaElement
       ).value
