@@ -525,8 +525,12 @@ test(
         JSON.stringify(proof, null, 2),
       );
     } finally {
-      await tools.close();
-      await new Promise((done) => server.close(done));
+      try {
+        await tools.close();
+      } finally {
+        server.closeAllConnections();
+        await new Promise((done) => server.close(done));
+      }
     }
   },
 );
